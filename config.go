@@ -5,7 +5,7 @@ import (
 )
 
 type Config struct {
-	Taints []Taint `yaml:"taints"`
+	Taints []Taints `yaml:"taints"`
 }
 
 type Taints struct {

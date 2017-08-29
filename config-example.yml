@@ -1,9 +1,13 @@
 ---
 taints:
   - selector:
-      matchLabels:
+      # Selector is a label selector that matches nodes based on their labels.
+      # See: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements
+      matchlabels:
         cloud.google.com/gke-preemptible: true
     taints:
+      # Each taint represents a taint to be applied to the node resource.
+      # See: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
       - key: preemptible
         value: true
         effect: NoSchedule
