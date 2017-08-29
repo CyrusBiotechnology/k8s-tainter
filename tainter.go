@@ -26,8 +26,8 @@ func (nt *NodeTainter) Do(stop chan interface{}) {
 	for {
 		select {
 		case event := <-c:
-			// if match label selector (watch is shared):
-			//   handle node event
+			// if match label selector /* (watch is shared) */ and not already appropriately tainted :
+			//   taint node
 			event.Object.(apiv1.Node)
 			nt.Client.Update(client.)
 		case <-stop:
