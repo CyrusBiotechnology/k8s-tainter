@@ -8,8 +8,6 @@ import (
 
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/pkg/api/v1"
 
 	// Make GCP great again
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -23,6 +21,8 @@ var (
 func main() {
 	// The parsed config file
 	var cfg Config
+	// Stop channels for all tainters
+	var tainterStops []chan interface{}
 
 	flag.Parse()
 
@@ -46,24 +46,20 @@ func main() {
 	nodes, err := k8s.CoreV1().Nodes().List(metav1.ListOptions{})
 	log.Printf("Successfully connected to kubernetes, %v nodes online\n", len(nodes.Items))
 
-	// Start a tainter for each object
-
-	for _, taint := range cfg.Taints {
-		watch, err := k8s.CoreV1().Nodes().Watch(metav1.ListOptions{LabelSelector: taint.Selector})
-		taint.Selector
-	}
+	// Fire up a watcher
 	watch, err := k8s.CoreV1().Nodes().Watch(metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
-	wc := watch.ResultChan()
-	for event := range wc {
-		node := event.Object.(*v1.Node)
-		//value, ok := node.Labels["node-type"]
-		//if !ok {
-		//	continue
-		//} else {
-		//	fmt.Println(node.Name, value)
-		//}
+
+	// Start a tainter for each configuration
+	for _, tainterConfig := range cfg.Taints {
+		stop := make(chan interface{})
+		tainterStops = append(tainterStops, stop)
+		go NodeTainter{
+			Watch:    &watch,
+			Selector: tainterConfig.Selector,
+			Taints:   tainterConfig.Taints,
+		}.Do(stop)
 	}
 }
