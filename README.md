@@ -2,12 +2,8 @@
 
 From this discussion: https://groups.google.com/forum/#!topic/kubernetes-users/KUm233PUp-I
 
-Taint Kubernetes nodes automatically from a configuration.
+Taint Kubernetes nodes automatically from a YAML configuration.
 
 # Config
 
-    taints:
-      - label: cloud.google.com/gke-preemptible
-        key: preemptible
-      - label: high-idle
-        key: high-priority
+See example config for configuration
