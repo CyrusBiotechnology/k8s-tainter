@@ -1,0 +1,9 @@
+---
+taints:
+  - selector:
+      matchLabels:
+        cloud.google.com/gke-preemptible: true
+    taints:
+      - key: preemptible
+        value: true
+        effect: NoSchedule
