@@ -3,10 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 
-	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	// Make GCP great again
@@ -22,19 +20,11 @@ func main() {
 	// The parsed config file
 	var cfg Config
 	// Stop channels for all tainters
-	var tainterStops []chan interface{}
+	//var tainterStops []chan interface{}
 
 	flag.Parse()
 
-	// Load the config file from disk
-	cfgB, err := ioutil.ReadFile(*config)
-	if err != nil {
-		panic(fmt.Sprint("unable to read config: ", err))
-	}
-	err = yaml.Unmarshal(cfgB, &cfg)
-	if err != nil {
-		panic(fmt.Sprint("unable to parse config: ", err))
-	}
+	cfg.Load(*config)
 
 	// Load k8s config
 	k8s, err := initK8s(*kubeconfig)
@@ -52,14 +42,17 @@ func main() {
 		panic(err)
 	}
 
-	// Start a tainter for each configuration
-	for _, tainterConfig := range cfg.Taints {
-		stop := make(chan interface{})
-		tainterStops = append(tainterStops, stop)
-		go NodeTainter{
-			Watch:    &watch,
-			Selector: tainterConfig.Selector,
-			Taints:   tainterConfig.Taints,
-		}.Do(stop)
+	nodeChan := nodeEventFilter(watch.ResultChan(), make(chan struct{}))
+
+	var modified = false
+	for {
+		node := <-nodeChan
+		go func() {
+			node, modified = cfg.AddTaints(node)
+			if modified {
+				fmt.Printf("tainting node %v: %v\n", node.Name, node.Spec.Taints)
+				k8s.CoreV1().Nodes().Update(node)
+			}
+		}()
 	}
 }
